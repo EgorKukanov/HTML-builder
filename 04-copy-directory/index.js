@@ -1,29 +1,29 @@
-
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const srcDir = path.join(__dirname, 'files');
 const destDir = path.join(__dirname, 'files-copy');
 
-
-copyDir = (srcDir, destDir) => {
-    if (!fs.existsSync(destDir)) {
-        fs.mkdirSync(destDir);
+async function copyDir(srcDir, destDir) {
+    try {
+        await fs.mkdir(destDir);
+    } catch (err) {
+        if (err.code !== 'EEXIST') throw err;
     }
 
-    const files = fs.readdirSync(srcDir);
+    const files = await fs.readdir(srcDir);
 
-    files.forEach((file) => {
+    for (const file of files) {
         const srcPath = path.join(srcDir, file);
         const destPath = path.join(destDir, file);
 
-        if (fs.statSync(srcPath).isDirectory()) {
-            copyDir(srcPath, destPath);
+        if ((await fs.stat(srcPath)).isDirectory()) {
+            await copyDir(srcPath, destPath);
         } else {
-            fs.copyFileSync(srcPath, destPath);
+            await fs.copyFile(srcPath, destPath);
         }
-    });
+    }
 }
 
-copyDir(srcDir, destDir);
-
-console.log('Файлы успешно скопированы!');
+copyDir(srcDir, destDir)
+    .then(() => console.log('Файлы успешно скопированы!'))
+    .catch((err) => console.error(err));
